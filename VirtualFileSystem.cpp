@@ -73,13 +73,13 @@ void VirtualFileSystem::open_VFS(std::string name) {
     file_VFS.read(reinterpret_cast<char *>(&FSI.blocks_used), sizeof(int));
     file_VFS.read(reinterpret_cast<char *>(&FSI.files_amount), sizeof(int));
 
-    std::cout << "Virtual File System Name:" << FSI.name
-              << "\nBlocks Amount:" << FSI.blocks_amount
-              << "\nBlocks Used:" << FSI.blocks_used
-              << "\nFiles Amount:" << FSI.files_amount << "\n";
+//    std::cout << "Virtual File System Name:" << FSI.name
+//              << "\nBlocks Amount:" << FSI.blocks_amount
+//              << "\nBlocks Used:" << FSI.blocks_used
+//              << "\nFiles Amount:" << FSI.files_amount << "\n";
 
     if(FSI.files_amount > 0) {
-        std::cout << "\nFiles\n";
+        // std::cout << "\nFiles\n";
         for(int i {0};i < FSI.files_amount;i++) {
             FileInfo file;
 
@@ -87,24 +87,39 @@ void VirtualFileSystem::open_VFS(std::string name) {
             file_VFS.read(reinterpret_cast<char *>(&file.start_address), sizeof(int));
             file_VFS.read(reinterpret_cast<char *>(&file.end_address), sizeof(int));
             file_VFS.read(reinterpret_cast<char *>(&file.size), sizeof(int));
-            std::cout << "Name:" << file.name
-                      << " Start:" << file.start_address
-                      << " End:" << file.end_address
-                      << " Size:" << file.size << "\n";
+//            std::cout << "Name:" << file.name
+//                      << " Start:" << file.start_address
+//                      << " End:" << file.end_address
+//                      << " Size:" << file.size << "\n";
 
             files.push_back(file);
         }
     }
 
     // TODO delete this part later
-    file_VFS.seekg(BLOCK_SIZE*INFO_BLOCK_AMOUNT - 10);
+    file_VFS.seekg(0);
     char tab [1];
-    for(int i {BLOCK_SIZE*INFO_BLOCK_AMOUNT - 10};i < BLOCK_SIZE*FSI.blocks_amount;i++) {
+    for(int i {0};i < BLOCK_SIZE*FSI.blocks_amount;i++) {
         file_VFS.read(tab, 1);
-        std::cout << "\n" << i << ":" << tab;
+        // std::cout << "\n" << i << ":" << tab;
     }
 
     file_VFS.close();
+}
+
+int VirtualFileSystem::find_file(std::string name) {
+    int index {-1};
+    for(int i {0};i < files.size();i++) {
+        if(files.at(i).name == name) {
+            index = i;
+        }
+    }
+
+    if(index == -1) {        // Checking if file was found in VFS
+        // TODO throw FileNotFoundException("Copying File To Linux", VFS_name);
+    }
+
+    return index;
 }
 
 void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::string VFS_name) {
@@ -200,16 +215,7 @@ void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::stri
 
 void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name) {
     /* Finding file in VFS */
-    int index {-1};
-    for(int i {0};i < files.size();i++) {
-        if(files.at(i).name == VFS_name) {
-            index = i;
-        }
-    }
-
-    if(index == -1) {        // Checking if file was found in VFS
-        // TODO throw FileNotFoundException("Copying File To Linux", VFS_name);
-    }
+    int index {find_file(VFS_name)};
 
     /* Creating file in linux */
     std::ifstream file_VFS;
@@ -222,6 +228,7 @@ void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string
 
     file_linux.open(correct_path(linux_name));
     if(!file_linux.good()) {
+        file_VFS.close();
         // TODO throw FileNotOpenedException("Copying File To Linux");
     }
 
@@ -243,6 +250,145 @@ void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string
 
     file_VFS.close();
     file_linux.close();
+}
+
+void VirtualFileSystem::remove_file(std::string name) {
+    int index {find_file(name)};
+    FileInfo file_to_delete = files.at(index);
+
+    std::ifstream current_file_VFS;
+    std::ofstream modified_file_VFS;
+
+    current_file_VFS.open(correct_path(FSI.name));
+    if(!current_file_VFS.good()) {
+        // TODO throw FileNotOpenedException("Removing File From Virtual File System");
+    }
+
+    modified_file_VFS.open(correct_path("modified.txt"));
+    if(!modified_file_VFS.good()) {
+        current_file_VFS.close();
+        // TODO throw FileNotOpenedException("Removing File From Virtual File System");
+    }
+
+    /* Rewriting VFS so it can be freely modified */
+    char buffer[BLOCK_SIZE];
+    for(int i {0};i < BLOCK_SIZE;i++) {
+        buffer[i] = '\0';
+    }
+
+    /* Saving empty Ingo segment */
+    for(int i {0};i < INFO_BLOCK_AMOUNT;i++) {
+        modified_file_VFS.write(buffer, BLOCK_SIZE);
+    }
+
+    /* Saving original Data segment */
+    current_file_VFS.seekg(BLOCK_SIZE * INFO_BLOCK_AMOUNT);
+    for(int i {0};i < FSI.blocks_amount - INFO_BLOCK_AMOUNT;i++) {
+        current_file_VFS.read(buffer, BLOCK_SIZE);
+        modified_file_VFS.write(buffer, BLOCK_SIZE);
+    }
+
+    /* removing file from files vector */
+    files.erase(files.begin() + index);
+    FSI.files_amount--;
+    // TODO Defragment();
+
+
+    /* Rewriting FSI info */
+    modified_file_VFS.seekp(0);
+    modified_file_VFS.write(reinterpret_cast<char *>(&FSI.name), sizeof(FSI.name));
+    modified_file_VFS.write(reinterpret_cast<char *>(&FSI.blocks_amount), sizeof(int));
+    modified_file_VFS.write(reinterpret_cast<char *>(&FSI.blocks_used), sizeof(int));
+    modified_file_VFS.write(reinterpret_cast<char *>(&FSI.files_amount), sizeof(int));
+
+    if(FSI.files_amount > 0) {
+        for(const auto &file : files) {
+            modified_file_VFS.write(reinterpret_cast<const char *>(&file.name), sizeof(file.name));
+            modified_file_VFS.write(reinterpret_cast<const char *>(&file.start_address), sizeof(int));
+            modified_file_VFS.write(reinterpret_cast<const char *>(&file.end_address), sizeof(int));
+            modified_file_VFS.write(reinterpret_cast<const char *>(&file.size), sizeof(int));
+        }
+    }
+
+    /* rewriting files data */
+    for(int i {0};i < BLOCK_SIZE;i++) {     // Setting buffer to array of NULL
+        buffer[i] = '\0';
+    }
+
+    modified_file_VFS.seekp(file_to_delete.start_address);
+    for(int i {0};i < std::ceil(static_cast<float>(file_to_delete.size) / BLOCK_SIZE);i++) {
+        modified_file_VFS.write(buffer, BLOCK_SIZE);
+    }
+
+    /* Deleting current and renaming modified */
+    std::remove(correct_path(FSI.name).c_str());
+    std::rename(correct_path("modified.txt").c_str(), correct_path(FSI.name).c_str());
+
+    current_file_VFS.close();
+    modified_file_VFS.close();
+}
+
+void VirtualFileSystem::remove_VFS(std::string name) {
+    std::remove(correct_path(name).c_str());
+}
+
+void VirtualFileSystem::display_VFS_content() {
+    std::cout << "Virtual File System Name:" << FSI.name
+//              << "\nBlocks Amount:" << FSI.blocks_amount
+//              << "\nBlocks Used:" << FSI.blocks_used
+              << "\nFiles Amount:" << FSI.files_amount << "\n";
+
+    if(FSI.files_amount > 0) {
+        std::cout << "\nFiles\n";
+        for(const auto &file : files) {
+            std::cout << "Name:" << file.name
+//                      << " Start:" << file.start_address
+//                      << " End:" << file.end_address
+                      << " Size:" << file.size << "\n";
+        }
+    }
+}
+
+void VirtualFileSystem::display_VFS_structure() {
+    /* FSI segment */
+    int size = sizeof(FileSystemInfo) + files.size() * sizeof(FileInfo);
+    for(int i {0};i < INFO_BLOCK_AMOUNT;i++) {
+        std::cout << "\nBlock:" << i
+                  << "\nAddress:" << i*BLOCK_SIZE
+                  << "\nType:Virtual File System Info"
+                  << "\nSize:" << BLOCK_SIZE;
+        if(size > 0) {
+            std::cout << "\nState:Allocated\n";
+        } else {
+            std::cout << "\nState:Free\n";
+        }
+        size -= BLOCK_SIZE;
+    }
+
+    /* File data segment */
+    std::ifstream file_VFS;
+    file_VFS.open(correct_path(FSI.name));
+    if(!file_VFS.good()) {
+        // TODO throw FileNotOpenedException("Displaying Virtual File System Structure");
+    }
+
+    char tab[1];
+    for(int i {3};i < FSI.blocks_amount;i++) {
+        file_VFS.seekg(i*BLOCK_SIZE);
+        file_VFS.read(tab, 1);
+
+        std::cout << "\nBlock:" << i
+                  << "\nAddress:" << i*BLOCK_SIZE
+                  << "\nType:File Data"
+                  << "\nSize:" << BLOCK_SIZE;
+        if(tab[0] != '\0') {
+            std::cout << "\nState:Allocated\n";
+        } else {
+            std::cout << "\nState:Free\n";
+        }
+    }
+
+    file_VFS.close();
 }
 
 void VirtualFileSystem::display_structures_size() {

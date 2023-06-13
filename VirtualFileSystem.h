@@ -46,13 +46,18 @@ private:
     /* Utilities functions */
     int get_VFS_free_size();
     int get_FSI_FI_size();
+    int find_file(std::string name);
     void display_structures_size();
 
 public:
     void create_VFS(std::string name, int size);
-    void open_VFS(std::string name);
+    void open_VFS(std::string name);    // Change it to Private function that should be called at the beginning of other functions
     void copy_from_Linux_to_VFS(std::string linux_name, std::string VFS_name);
     void copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name);
+    void remove_file(std::string name);
+    void remove_VFS(std::string name);
+    void display_VFS_content();
+    void display_VFS_structure();
 };
 
 
