@@ -198,42 +198,52 @@ void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::stri
     files.push_back(file);
 }
 
-//void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name) {
-//    /* Finding file in VFS */
-//    int start_address {0};
-//    int end_address {0};
-//    FileInfo file;
-//    for(const auto &file : files) {
-//        if(file.name == VFS_name) {
-//            start_address = file.start_address;
-//            end_address = file.end_address;
-//        }
-//    }
-//
-//    if(start_address == 0) {        // Checking if file was found in VFS
-//        // TODO throw FileNotFoundException("Copying File To Linux", VFS_name);
-//    }
-//
-//    /* Creating file in linux */
-//    std::ifstream file_VFS;
-//    std::ofstream file_linux;
-//
-//    file_VFS.open(correct_path(VFS_name));
-//    if(!file_VFS.good()) {
-//        // TODO throw FileNotOpenedException("Copying File To Linux");
-//    }
-//
-//    file_linux.open(correct_path(linux_name));
-//    if(!file_linux.good()) {
-//        // TODO throw FileNotOpenedException("Copying File To Linux");
-//    }
-//
-//    /* Copying file to linux */
-//
-//
-//    file_VFS.close();
-//    file_linux.close();
-//}
+void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name) {
+    /* Finding file in VFS */
+    int index {-1};
+    for(int i {0};i < files.size();i++) {
+        if(files.at(i).name == VFS_name) {
+            index = i;
+        }
+    }
+
+    if(index == -1) {        // Checking if file was found in VFS
+        // TODO throw FileNotFoundException("Copying File To Linux", VFS_name);
+    }
+
+    /* Creating file in linux */
+    std::ifstream file_VFS;
+    std::ofstream file_linux;
+
+    file_VFS.open(correct_path(FSI.name));
+    if(!file_VFS.good()) {
+        // TODO throw FileNotOpenedException("Copying File To Linux");
+    }
+
+    file_linux.open(correct_path(linux_name));
+    if(!file_linux.good()) {
+        // TODO throw FileNotOpenedException("Copying File To Linux");
+    }
+
+    /* Copying file to linux */
+    file_VFS.seekg(files.at(index).start_address);      // Setting cursor at the beginning of file data
+    int current_block_size = files.at(index).size;
+    char buffer[BLOCK_SIZE];
+
+    for(int i {0};i < std::ceil(static_cast<float>(files.at(index).size) / BLOCK_SIZE);i++) {
+        if(current_block_size >= BLOCK_SIZE) {
+            file_VFS.read(buffer, BLOCK_SIZE);
+            file_linux.write(buffer, BLOCK_SIZE);
+        } else {
+            file_VFS.read(buffer, current_block_size);
+            file_linux.write(buffer, current_block_size);
+        }
+        current_block_size -= BLOCK_SIZE;
+    }
+
+    file_VFS.close();
+    file_linux.close();
+}
 
 void VirtualFileSystem::display_structures_size() {
 //    std::cout << "FI size:" << sizeof(FileInfo) << std::endl;
