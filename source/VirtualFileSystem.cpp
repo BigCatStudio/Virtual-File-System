@@ -2,7 +2,7 @@
 // Created by piotr on 6/12/23.
 //
 
-#include "VirtualFileSystem.h"
+#include "../header/VirtualFileSystem.h"
 
 /* Used in order to generate VFS and other files in the same directory as source code */
 std::string VirtualFileSystem::correct_path(const std::string &name) const {
