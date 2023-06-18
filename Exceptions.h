@@ -6,34 +6,65 @@
 #define LAB5_EXCEPTIONS_H
 
 #include <exception>
+#include <string>
 
-// ("Defragmentation Of Virtual File System")
 class FileNotOpenedException : public std::exception {
-    FileNotOpenedException() noexcept = default;
-    ~FileNotOpenedException() override = default;
+    std::string message;
+    std::string name;
 
 public:
-    const char* what() const noexcept override;
+    FileNotOpenedException(std::string message, std::string name) noexcept;
+    ~FileNotOpenedException() override = default;
+
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
-// ("Creating Virtual File System", name)
+
 class InvalidNameException : public std::exception {
+    std::string message;
+    std::string name;
 
+public:
+    InvalidNameException(std::string message, std::string name) noexcept;
+    ~InvalidNameException() override = default;
+
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
-// ("Creating Virtual File System", size)
+
 class InvalidSizeException : public std::exception {
+    std::string message;
+    int size;
 
+public:
+    InvalidSizeException(std::string message, int size) noexcept;
+    ~InvalidSizeException() override = default;
+
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
-// ("Copying File To Linux", VFS_name)
+
 class FileNotFoundException : public std::exception {
+    std::string message;
+    std::string name;
 
+public:
+    FileNotFoundException(std::string message, std::string name) noexcept;
+    ~FileNotFoundException() override = default;
+
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
-// ("Copying File To Virtual File System", linux_name)
+// ("Copying File To Virtual File System", name)
 class NotEnoughSpaceException : public std::exception {
+    std::string message;
+    std::string name;
 
+public:
+    NotEnoughSpaceException(std::string message, std::string name) noexcept;
+    ~NotEnoughSpaceException() override = default;
+
+    [[nodiscard]] const char* what() const noexcept override;
 };
 
 #endif //LAB5_EXCEPTIONS_H

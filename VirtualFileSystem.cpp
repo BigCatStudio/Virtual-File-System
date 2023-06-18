@@ -27,13 +27,13 @@ void VirtualFileSystem::defragmentation() {
 
     current_file_VFS.open(correct_path(FSI.name));
     if(!current_file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Defragmentation Of Virtual File System", FSI.name);
+         throw FileNotOpenedException("Defragmentation Of Virtual File System", FSI.name);
     }
 
     modified_file_VFS.open(correct_path("modified.txt"));
     if(!modified_file_VFS.good()) {
         current_file_VFS.close();
-        // TODO throw FileNotOpenedException("Defragmentation Of Virtual File System", "modified.txt");
+        throw FileNotOpenedException("Defragmentation Of Virtual File System", "modified.txt");
     }
 
     char buffer[BLOCK_SIZE];
@@ -51,11 +51,8 @@ void VirtualFileSystem::defragmentation() {
     int start_new {0};
     int end_new {0};
 
-    std::cout << "\nDefragmentation";
     for(auto &file : files) {
-        std::cout << "\nCurrent file " << file.name;
         if(file.start_address > start_address) {        // Checking if file starts at the first possible free block
-            std::cout << file.name << " | old address:" << file.start_address << " new address:" << start_address;
             start_new = start_address;
             end_new = start_new + file.size;
 
@@ -96,7 +93,6 @@ void VirtualFileSystem::defragmentation() {
 
         start_address += BLOCK_SIZE * std::ceil(static_cast<float>(file.size) / BLOCK_SIZE);
     }
-    std::cout << "\n";
 
     FSI.blocks_used = std::ceil(static_cast<float>(start_address) / BLOCK_SIZE);
 
@@ -124,10 +120,10 @@ void VirtualFileSystem::defragmentation() {
 void VirtualFileSystem::create_VFS(const std::string &name, int size) {
     /* Assigning VFS parameters */
     if(name.length() > 48 || name.length() == 0) {
-        // TODO throw InvalidNameException("Creating Virtual File System", name);
+        throw InvalidNameException("Creating Virtual File System", name);
     }
     if(size <= 3) {     // 3 is reserved for info about VFS structure
-        // TODO throw InvalidSizeException("Creating Virtual File System", size);
+        throw InvalidSizeException("Creating Virtual File System", size);
     }
     strcpy(FSI.name, name.c_str());
     FSI.blocks_amount = size;   // Size should be provided in kB
@@ -143,7 +139,7 @@ void VirtualFileSystem::create_VFS(const std::string &name, int size) {
     std::ofstream file_VFS;
     file_VFS.open(correct_path(name));
     if(!file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Creating Virtual File System", name);
+        throw FileNotOpenedException("Creating Virtual File System", name);
     }
 
     // Writing FSI data at the beginning of VFS
@@ -162,11 +158,11 @@ void VirtualFileSystem::create_VFS(const std::string &name, int size) {
     file_VFS.close();
 }
 
-void VirtualFileSystem::open_VFS(std::string name) {
+void VirtualFileSystem::open_VFS(const std::string &name) {
     std::ifstream file_VFS;
     file_VFS.open(correct_path(name));
     if(!file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Opening Virtual File System", name);
+        throw FileNotOpenedException("Opening Virtual File System", name);
     }
 
     file_VFS.read(reinterpret_cast<char *>(&FSI.name), sizeof(FSI.name));
@@ -174,13 +170,7 @@ void VirtualFileSystem::open_VFS(std::string name) {
     file_VFS.read(reinterpret_cast<char *>(&FSI.blocks_used), sizeof(int));
     file_VFS.read(reinterpret_cast<char *>(&FSI.files_amount), sizeof(int));
 
-    std::cout << "Virtual File System Name:" << FSI.name
-              << "\nBlocks Amount:" << FSI.blocks_amount
-              << "\nBlocks Used:" << FSI.blocks_used
-              << "\nFiles Amount:" << FSI.files_amount << "\n";
-
     if(FSI.files_amount > 0) {
-        // std::cout << "\nFiles\n";
         for(int i {0};i < FSI.files_amount;i++) {
             FileInfo file;
 
@@ -188,24 +178,10 @@ void VirtualFileSystem::open_VFS(std::string name) {
             file_VFS.read(reinterpret_cast<char *>(&file.start_address), sizeof(int));
             file_VFS.read(reinterpret_cast<char *>(&file.end_address), sizeof(int));
             file_VFS.read(reinterpret_cast<char *>(&file.size), sizeof(int));
-            std::cout << "Name:" << file.name
-                      << " Start:" << file.start_address
-                      << " End:" << file.end_address
-                      << " Size:" << file.size << "\n";
 
             files.push_back(file);
         }
     }
-
-    // TODO delete this part later
-    file_VFS.seekg(0);
-    char tab [1];
-    for(int i {0};i < BLOCK_SIZE*FSI.blocks_amount;i++) {
-        file_VFS.read(tab, 1);
-         std::cout << "\n" << i << ":" << tab;
-    }
-
-    file_VFS.close();
 }
 
 int VirtualFileSystem::find_file(const std::string &name) const {
@@ -217,22 +193,22 @@ int VirtualFileSystem::find_file(const std::string &name) const {
     }
 
     if(index == -1) {        // Checking if file was found in VFS
-        // TODO throw FileNotFoundException("Copying File To Linux", name);
+        throw FileNotFoundException("Copying File To Linux", name);
     }
 
     return index;
 }
 
-void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::string VFS_name) {
+void VirtualFileSystem::copy_from_Linux_to_VFS(const std::string &linux_name, const std::string &VFS_name) {
     /* Checking it operation is possible */
     if(VFS_name.length() > 48 || VFS_name.length() == 0) {
-        // TODO throw InvalidNameException("Copying File To Virtual File System", VFS_name);
+        throw InvalidNameException("Copying File To Virtual File System", VFS_name);
     }
 
     // First check size of file if it will fit in VFS
     int linux_file_size = std::filesystem::file_size(correct_path(linux_name));
     if(linux_file_size > get_VFS_free_size()) {
-        // TODO throw NotEnoughSpaceException("Copying File To Virtual File System", linux_name);
+        throw NotEnoughSpaceException("Copying File To Virtual File System", linux_name);
     }
 
     /* Defining file info */
@@ -253,20 +229,20 @@ void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::stri
 
     current_file_VFS.open(correct_path(FSI.name));
     if(!current_file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Copying File To Virtual File System", FSI.name);
+        throw FileNotOpenedException("Copying File To Virtual File System", FSI.name);
     }
 
     modified_file_VFS.open(correct_path("modified.txt"));
     if(!modified_file_VFS.good()) {
         current_file_VFS.close();
-        // TODO throw FileNotOpenedException("Copying File To Virtual File System", "modified.txt");
+        throw FileNotOpenedException("Copying File To Virtual File System", "modified.txt");
     }
 
     file_linux.open(correct_path(linux_name));
     if(!file_linux.good()) {
         current_file_VFS.close();
         modified_file_VFS.close();
-        // TODO throw FileNotOpenedException("Copying File To Virtual File System", linux_name);
+        throw FileNotOpenedException("Copying File To Virtual File System", linux_name);
     }
 
     /* Rewriting VFS so it can be freely modified */
@@ -312,7 +288,7 @@ void VirtualFileSystem::copy_from_Linux_to_VFS(std::string linux_name, std::stri
     files.push_back(file);
 }
 
-void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name) {
+void VirtualFileSystem::copy_from_VFS_to_Linux(const std::string &VFS_name, const std::string &linux_name) {
     /* Finding file in VFS */
     int index {find_file(VFS_name)};
 
@@ -322,13 +298,13 @@ void VirtualFileSystem::copy_from_VFS_to_Linux(std::string VFS_name, std::string
 
     file_VFS.open(correct_path(FSI.name));
     if(!file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Copying File To Linux", FSI.name);
+        throw FileNotOpenedException("Copying File To Linux", FSI.name);
     }
 
     file_linux.open(correct_path(linux_name));
     if(!file_linux.good()) {
         file_VFS.close();
-        // TODO throw FileNotOpenedException("Copying File To Linux", linux_name);
+        throw FileNotOpenedException("Copying File To Linux", linux_name);
     }
 
     /* Copying file to linux */
@@ -360,13 +336,13 @@ void VirtualFileSystem::remove_file(const std::string &name) {
 
     current_file_VFS.open(correct_path(FSI.name));
     if(!current_file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Removing File From Virtual File System", FSI.name);
+        throw FileNotOpenedException("Removing File From Virtual File System", FSI.name);
     }
 
     modified_file_VFS.open(correct_path("modified.txt"));
     if(!modified_file_VFS.good()) {
         current_file_VFS.close();
-        // TODO throw FileNotOpenedException("Removing File From Virtual File System", "modified.txt");
+        throw FileNotOpenedException("Removing File From Virtual File System", "modified.txt");
     }
 
     /* Rewriting VFS so it can be freely modified */
@@ -468,7 +444,7 @@ void VirtualFileSystem::display_VFS_structure() const {
     std::ifstream file_VFS;
     file_VFS.open(correct_path(FSI.name));
     if(!file_VFS.good()) {
-        // TODO throw FileNotOpenedException("Displaying Virtual File System Structure", FSI.name);
+        throw FileNotOpenedException("Displaying Virtual File System Structure", FSI.name);
     }
 
     char tab[1];

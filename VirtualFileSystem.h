@@ -6,7 +6,6 @@
 #define LAB5_VIRTUALFILESYSTEM_H
 
 #include <iostream>
-#include <string>
 #include <cstring>      // Used for operations on char arrays
 #include <fstream>
 #include <filesystem>
@@ -14,6 +13,7 @@
 #include <iomanip>      // Used for writing and reading FSI and FI
 #include <cmath>        // Used for dividing memory amount and std::ceil()
 #include <cstdio>       // For operations on real files (deleting, renaming)
+#include "Exceptions.h"
 
 /*
  * VFS - Virtual File System
@@ -52,9 +52,9 @@ private:
 
 public:
     void create_VFS(const std::string &name, int size);
-    void open_VFS(std::string name);    // Change it to Private function that should be called at the beginning of other functions
-    void copy_from_Linux_to_VFS(std::string linux_name, std::string VFS_name);
-    void copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name);
+    void open_VFS(const std::string &name);    // Change it to Private function that should be called at the beginning of other functions
+    void copy_from_Linux_to_VFS(const std::string &linux_name, const std::string &VFS_name);
+    void copy_from_VFS_to_Linux(const std::string &VFS_name, const std::string &linux_name);
     void remove_file(const std::string &name);
     void remove_VFS(const std::string &name);
     void display_VFS_content() const;
