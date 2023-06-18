@@ -7,40 +7,50 @@
 #include <utility>
 
 FileNotOpenedException::FileNotOpenedException(std::string message, std::string name) noexcept
-    : message {std::move(message)}, name {std::move(name)} {}
+    : message {std::move(message)}, name {std::move(name)} {
+    this->message = "File " + this->name + " did not open correctly during " + this->message;
+}
 
 const char* FileNotOpenedException::what() const noexcept {
-    return ("File " + name + "did not opened correctly during " + message).c_str();
+    return message.c_str();
 }
 
 
 InvalidNameException::InvalidNameException(std::string message, std::string name) noexcept
-    : message {std::move(message)}, name {std::move(name)} {}
+    : message {std::move(message)}, name {std::move(name)} {
+    this->message = "Provided file name " + this->name + " is invalid during " + this->message;
+}
 
 const char* InvalidNameException::what() const noexcept {
-    return ("Provided file name " + name + "is invalid during " + message).c_str();
+    return message.c_str();
 }
 
 
 InvalidSizeException::InvalidSizeException(std::string message, int size) noexcept
-    : message {std::move(message)}, size {size} {}
+    : message {std::move(message)}, size {size} {
+    this->message = "Virtual File System of size " + std::to_string(this->size) + " is invalid during " + this->message;
+}
 
 [[nodiscard]] const char* InvalidSizeException::what() const noexcept {
-    return ("Virtual File System of size " + std::to_string(size) + " is invalid during " + message).c_str();
+    return message.c_str();
 }
 
 
 FileNotFoundException::FileNotFoundException(std::string message, std::string name) noexcept
-    : message {std::move(message)}, name {std::move(name)} {}
+    : message {std::move(message)}, name {std::move(name)} {
+    this->message = "File " + this->name + " was not found  during " + this->message;
+}
 
 [[nodiscard]] const char* FileNotFoundException::what() const noexcept {
-    return ("File " + name + "was not found  during " + message).c_str();
+    return message.c_str();
 }
 
 
 NotEnoughSpaceException::NotEnoughSpaceException(std::string message, std::string name) noexcept
-    : message {std::move(message)}, name {std::move(name)} {}
+    : message {std::move(message)}, name {std::move(name)} {
+    this->message = "There is not enough space for file " + this->name + " during " + this->message;
+}
 
 [[nodiscard]] const char* NotEnoughSpaceException::what() const noexcept {
-    return ("There is not enough space for file " + name + " during " + message).c_str();
+    return message.c_str();
 }
