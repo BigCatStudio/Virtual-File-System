@@ -44,22 +44,21 @@ private:
     std::vector<FileInfo> files;    // List of currently stored files in VFS - it should be ordered according to start_address
 
     /* Utilities functions */
-    int get_VFS_free_size();
-    int get_FSI_FI_size();
-    int find_file(std::string name);
-    void display_structures_size();
+    [[ nodiscard ]] std::string correct_path(const std::string &name) const;
+    [[ nodiscard ]] int get_VFS_free_size() const;
+    [[ nodiscard ]] int get_FSI_FI_size() const;
+    [[ nodiscard ]] int find_file(const std::string &name) const;
+    void defragmentation();
 
 public:
-    void create_VFS(std::string name, int size);
+    void create_VFS(const std::string &name, int size);
     void open_VFS(std::string name);    // Change it to Private function that should be called at the beginning of other functions
     void copy_from_Linux_to_VFS(std::string linux_name, std::string VFS_name);
     void copy_from_VFS_to_Linux(std::string VFS_name, std::string linux_name);
-    void remove_file(std::string name);
-    void remove_VFS(std::string name);
-    void display_VFS_content();
-    void display_VFS_structure();
+    void remove_file(const std::string &name);
+    void remove_VFS(const std::string &name);
+    void display_VFS_content() const;
+    void display_VFS_structure() const;
 };
-
-
 
 #endif //LAB5_VIRTUALFILESYSTEM_H
