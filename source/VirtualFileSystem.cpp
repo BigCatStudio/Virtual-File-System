@@ -205,6 +205,13 @@ void VirtualFileSystem::copy_from_Linux_to_VFS(const std::string &linux_name, co
         throw InvalidNameException("Copying File To Virtual File System", VFS_name);
     }
 
+    // Checking if file with that name already exists
+    for(const auto &file : files) {
+        if(file.name == VFS_name) {
+            throw InvalidNameException("Copying File To Virtual File System", VFS_name);
+        }
+    }
+
     // First check size of file if it will fit in VFS
     int linux_file_size = std::filesystem::file_size(correct_path(linux_name));
     if(linux_file_size > get_VFS_free_size()) {
